@@ -4,9 +4,45 @@
 
 import XCTest
 import FeedStoreChallenge
+import CoreData
 
 
 final class CoreDataFeedStore: FeedStore {
+    
+    private lazy var documentsDirectory: URL = {
+        let urls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+
+        return urls[urls.count-1]
+    }()
+    
+    private lazy var managedObjectModel: NSManagedObjectModel = {
+        let modelURL = Bundle.main.url(forResource: "FeedStoreModel", withExtension: "momd")!
+        return NSManagedObjectModel(contentsOf: modelURL)!
+    }()
+    
+    private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator? = {
+        var coordinator: NSPersistentStoreCoordinator? = NSPersistentStoreCoordinator(managedObjectModel: managedObjectModel)
+        let storeOptions = [NSMigratePersistentStoresAutomaticallyOption : true,
+                            NSInferMappingModelAutomaticallyOption : true
+        ]
+        let url = documentsDirectory.appendingPathComponent("FeedStoreModel.sqlite")
+
+        do {
+            try coordinator!.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: url, options: storeOptions)
+        } catch{
+            coordinator = nil
+            print("Unresolved error \(error)")
+            abort()
+        }
+        return coordinator
+    }()
+    
+    private lazy var managedContext: NSManagedObjectContext? = {
+        var managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
+        return managedObjectContext
+    }()
+    
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
         
