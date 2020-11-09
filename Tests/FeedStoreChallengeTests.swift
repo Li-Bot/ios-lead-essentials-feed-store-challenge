@@ -16,8 +16,7 @@ final class CoreDataFeedStore: FeedStore {
     }()
     
     private lazy var managedObjectModel: NSManagedObjectModel = {
-        let modelURL = Bundle.main.url(forResource: "FeedStoreModel", withExtension: "momd")!
-        return NSManagedObjectModel(contentsOf: modelURL)!
+        return NSManagedObjectModel.mergedModel(from: [Bundle.main])!
     }()
     
     private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator? = {
@@ -42,6 +41,10 @@ final class CoreDataFeedStore: FeedStore {
         managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
         return managedObjectContext
     }()
+    
+    init() {
+        _ = managedContext
+    }
     
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
