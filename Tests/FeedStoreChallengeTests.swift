@@ -16,7 +16,7 @@ final class CoreDataFeedStore: FeedStore {
     }()
     
     private lazy var managedObjectModel: NSManagedObjectModel = {
-        return NSManagedObjectModel.mergedModel(from: [Bundle.main])!
+        return NSManagedObjectModel.mergedModel(from: [Bundle(for: CoreDataFeedStore.self)])!
     }()
     
     private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator? = {
@@ -36,7 +36,7 @@ final class CoreDataFeedStore: FeedStore {
         return coordinator
     }()
     
-    private lazy var managedContext: NSManagedObjectContext? = {
+    private lazy var managedContext: NSManagedObjectContext = {
         var managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
         return managedObjectContext
@@ -52,11 +52,60 @@ final class CoreDataFeedStore: FeedStore {
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        
+        managedContext.perform { [unowned self] in
+            let cacheEntityName = String(describing: CDCache.self)
+            let cacheEntityDescription = NSEntityDescription.entity(forEntityName: cacheEntityName, in: self.managedContext)!
+            
+            let feedImageEntityName = String(describing: CDFeedImage.self)
+            let feedImageEntityDescription = NSEntityDescription.entity(forEntityName: feedImageEntityName, in: self.managedContext)!
+            
+            let cdCache = CDCache(entity: cacheEntityDescription, insertInto: self.managedContext)
+            cdCache.timestamp = timestamp
+            
+            for feedImage in feed {
+                let cdFeedImage = CDFeedImage(entity: feedImageEntityDescription, insertInto: managedContext)
+                cdFeedImage.id = feedImage.id
+                cdFeedImage.desc = feedImage.description
+                cdFeedImage.location = feedImage.location
+                cdFeedImage.url = feedImage.url
+                cdCache.addToFeed(cdFeedImage)
+            }
+            
+            self.saveContext(context: managedContext)
+            completion(nil)
+        }
     }
     
     func retrieve(completion: @escaping RetrievalCompletion) {
-        completion(.empty)
+        let fetchRequest: NSFetchRequest<CDCache> = CDCache.fetchRequest()
+        if let cdCache = try? managedContext.fetch(fetchRequest).first {
+            completion(.found(feed: mapLocalsToModels(cdCache.feed), timestamp: cdCache.timestamp))
+        } else {
+            completion(.empty)
+        }
+    }
+    
+    private func mapLocalsToModels(_ feed: Set<CDFeedImage>) -> [LocalFeedImage] {
+        feed.map { cdFeedImage -> LocalFeedImage in
+            LocalFeedImage(id: cdFeedImage.id,
+                           description: cdFeedImage.desc,
+                           location: cdFeedImage.location,
+                           url: cdFeedImage.url
+            )
+        }
+    }
+    
+    @discardableResult
+    private func saveContext(context: NSManagedObjectContext) -> Error? {
+        if !context.hasChanges {
+            return nil
+        }
+        do {
+            try context.save()
+            return nil
+        } catch {
+            return error
+        }
     }
     
 }
@@ -75,6 +124,13 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     //  Repeat this process until all tests are passing.
     //
     //  ***********************
+    
+    override func setUp() {
+        super.setUp()
+        
+        let storeURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.sqlite")
+        _ = try? FileManager.default.removeItem(at: storeURL)
+    }
 
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
@@ -89,9 +145,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_retrieve_deliversFoundValuesOnNonEmptyCache() {
-//		let sut = makeSUT()
-//
-//		assertThatRetrieveDeliversFoundValuesOnNonEmptyCache(on: sut)
+		let sut = makeSUT()
+
+		assertThatRetrieveDeliversFoundValuesOnNonEmptyCache(on: sut)
 	}
 
 	func test_retrieve_hasNoSideEffectsOnNonEmptyCache() {
