@@ -7,7 +7,7 @@ import FeedStoreChallenge
 import CoreData
 
 
-final class ErrorManagedObjectContext: NSManagedObjectContext {
+final class FailableManagedObjectContext: NSManagedObjectContext {
     
     private let allowFetch: Bool
     
@@ -31,6 +31,8 @@ final class ErrorManagedObjectContext: NSManagedObjectContext {
         throw anyNSError()
     }
     
+    
+    
     override func save() throws {
         throw anyNSError()
     }
@@ -41,13 +43,32 @@ final class ErrorManagedObjectContext: NSManagedObjectContext {
     
 }
 
-final class CoreDataStack {
+final class FailablePersistentStoreCoordinator: NSPersistentStoreCoordinator {
+    
+    override func execute(_ request: NSPersistentStoreRequest, with context: NSManagedObjectContext) throws -> Any {
+        throw anyNSError()
+    }
+    
+    private func anyNSError() -> NSError {
+        NSError(domain: "any error", code: NSPersistentStoreOperationError, userInfo: nil)
+    }
+    
+}
+
+protocol CoreDataStack {
+    
+    var managedContext: NSManagedObjectContext { get }
+    
+    init(storeURL: URL)
+
+    func deleteAll(of entityName: String, context: NSManagedObjectContext) -> Error?
+    func saveContext(context: NSManagedObjectContext) -> Error?
+    
+}
+
+final class ProductionCoreDataStack: CoreDataStack {
     
     lazy var managedContext: NSManagedObjectContext = {
-        if let context = managedObjectContext {
-            context.persistentStoreCoordinator = persistentStoreCoordinator
-            return context
-        }
         var managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
         return managedObjectContext
@@ -70,24 +91,90 @@ final class CoreDataStack {
     }()
     
     private lazy var managedObjectModel: NSManagedObjectModel = {
-        return NSManagedObjectModel.mergedModel(from: [Bundle(for: CoreDataStack.self)])!
+        return NSManagedObjectModel.mergedModel(from: [Bundle(for: ProductionCoreDataStack.self)])!
     }()
     
     private let storeURL: URL
     
-    private let managedObjectContext: NSManagedObjectContext?
-    
-    init(storeURL: URL, context: NSManagedObjectContext? = nil) {
+    init(storeURL: URL) {
         self.storeURL = storeURL
-        managedObjectContext = context
     }
     
-    func deleteAll(of entityName: String, context: NSManagedObjectContext? = nil) -> Error? {
+    func deleteAll(of entityName: String, context: NSManagedObjectContext) -> Error? {
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
 
         do {
-            try persistentStoreCoordinator?.execute(deleteRequest, with: context ?? managedContext)
+            try persistentStoreCoordinator?.execute(deleteRequest, with: context)
+            return nil
+        } catch {
+            return error
+        }
+    }
+    
+    @discardableResult
+    func saveContext(context: NSManagedObjectContext) -> Error? {
+        if !context.hasChanges {
+            return nil
+        }
+        do {
+            try context.save()
+            return nil
+        } catch {
+            return error
+        }
+    }
+    
+}
+
+
+final class FailableCoreDataStack: CoreDataStack {
+    
+    lazy var managedContext: NSManagedObjectContext = {
+        var managedObjectContext = FailableManagedObjectContext(concurrencyType: .privateQueueConcurrencyType, allowFetch: allowFetch)
+        managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
+        return managedObjectContext
+    }()
+    
+    private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator? = {
+        var coordinator: NSPersistentStoreCoordinator? = FailablePersistentStoreCoordinator(managedObjectModel: managedObjectModel)
+        let storeOptions = [NSMigratePersistentStoresAutomaticallyOption : true,
+                            NSInferMappingModelAutomaticallyOption : true
+        ]
+
+        do {
+            try coordinator!.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: storeOptions)
+        } catch {
+            coordinator = nil
+            print("Unresolved error \(error)")
+            abort()
+        }
+        return coordinator
+    }()
+    
+    private lazy var managedObjectModel: NSManagedObjectModel = {
+        return NSManagedObjectModel.mergedModel(from: [Bundle(for: ProductionCoreDataStack.self)])!
+    }()
+    
+    private let storeURL: URL
+    private let allowFetch: Bool
+    
+    init(storeURL: URL) {
+        self.storeURL = storeURL
+        allowFetch = false
+    }
+    
+    init(storeURL: URL, allowFetch: Bool) {
+        self.storeURL = storeURL
+        self.allowFetch = allowFetch
+    }
+    
+    func deleteAll(of entityName: String, context: NSManagedObjectContext) -> Error? {
+        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+
+        do {
+            try persistentStoreCoordinator?.execute(deleteRequest, with: context)
             return nil
         } catch {
             return error
@@ -312,9 +399,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	
 	// - MARK: Helpers
 	
-    private func makeSUT(storeURL: URL? = nil, context: NSManagedObjectContext? = nil) -> FeedStore {
+    private func makeSUT(storeURL: URL? = nil, coreDataStack: CoreDataStack? = nil) -> FeedStore {
         let url = storeURL ?? testSpecificStoreURL()
-        let coreDataStack = CoreDataStack(storeURL: url, context: context)
+        let coreDataStack = coreDataStack ?? ProductionCoreDataStack(storeURL: url)
         let sut = CoreDataFeedStore(coreDataStack: coreDataStack)
         
         return sut
@@ -332,8 +419,8 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.store")
     }
     
-    private func anyErrorManagedObjectContext(allowFetch: Bool = false) -> NSManagedObjectContext {
-        ErrorManagedObjectContext(concurrencyType: .privateQueueConcurrencyType, allowFetch: allowFetch)
+    private func failableCoreDataStack(allowFetch: Bool = false) -> CoreDataStack {
+        FailableCoreDataStack(storeURL: testSpecificStoreURL(), allowFetch: allowFetch)
     }
 	
 }
@@ -349,13 +436,13 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 extension FeedStoreChallengeTests: FailableRetrieveFeedStoreSpecs {
 
 	func test_retrieve_deliversFailureOnRetrievalError() {
-        let sut = makeSUT(context: anyErrorManagedObjectContext())
+        let sut = makeSUT(coreDataStack: failableCoreDataStack())
 
 		assertThatRetrieveDeliversFailureOnRetrievalError(on: sut)
 	}
 
 	func test_retrieve_hasNoSideEffectsOnFailure() {
-		let sut = makeSUT(context: anyErrorManagedObjectContext())
+		let sut = makeSUT(coreDataStack: failableCoreDataStack())
 
 		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
 	}
@@ -365,13 +452,13 @@ extension FeedStoreChallengeTests: FailableRetrieveFeedStoreSpecs {
 extension FeedStoreChallengeTests: FailableInsertFeedStoreSpecs {
 
 	func test_insert_deliversErrorOnInsertionError() {
-        let sut = makeSUT(context: anyErrorManagedObjectContext())
+        let sut = makeSUT(coreDataStack: failableCoreDataStack())
 
 		assertThatInsertDeliversErrorOnInsertionError(on: sut)
 	}
 
 	func test_insert_hasNoSideEffectsOnInsertionError() {
-        let sut = makeSUT(context: anyErrorManagedObjectContext(allowFetch: true))
+        let sut = makeSUT(coreDataStack: failableCoreDataStack(allowFetch: true))
 
 		assertThatInsertHasNoSideEffectsOnInsertionError(on: sut)
 	}
@@ -380,16 +467,16 @@ extension FeedStoreChallengeTests: FailableInsertFeedStoreSpecs {
 
 extension FeedStoreChallengeTests: FailableDeleteFeedStoreSpecs {
 
-//	func test_delete_deliversErrorOnDeletionError() {
-////		let sut = makeSUT()
-////
-////		assertThatDeleteDeliversErrorOnDeletionError(on: sut)
-//	}
-//
-//	func test_delete_hasNoSideEffectsOnDeletionError() {
-////		let sut = makeSUT()
-////
-////		assertThatDeleteHasNoSideEffectsOnDeletionError(on: sut)
-//	}
-//
-//}
+	func test_delete_deliversErrorOnDeletionError() {
+		let sut = makeSUT(coreDataStack: failableCoreDataStack())
+
+		assertThatDeleteDeliversErrorOnDeletionError(on: sut)
+	}
+
+	func test_delete_hasNoSideEffectsOnDeletionError() {
+		let sut = makeSUT(coreDataStack: failableCoreDataStack(allowFetch: true))
+
+		assertThatDeleteHasNoSideEffectsOnDeletionError(on: sut)
+	}
+
+}
