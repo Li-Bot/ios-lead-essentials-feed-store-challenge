@@ -9,20 +9,35 @@ import CoreData
 
 final class ErrorManagedObjectContext: NSManagedObjectContext {
     
+    private let allowFetch: Bool
+    
+    init(concurrencyType ct: NSManagedObjectContextConcurrencyType, allowFetch: Bool) {
+        self.allowFetch = allowFetch
+        super.init(concurrencyType: ct)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override var hasChanges: Bool {
+        true
+    }
+    
     override func fetch(_ request: NSFetchRequest<NSFetchRequestResult>) throws -> [Any] {
+        if allowFetch {
+            return []
+        }
+        throw anyNSError()
+    }
+    
+    override func save() throws {
         throw anyNSError()
     }
     
     private func anyNSError() -> NSError {
         NSError(domain: "any error", code: NSPersistentStoreOperationError, userInfo: nil)
     }
-    
-}
-
-struct PersistentStoreDescription {
-    
-    let storeClass: AnyClass
-    let storeType: String
     
 }
 
@@ -175,8 +190,8 @@ final class CoreDataFeedStore: FeedStore {
                 cdCache.addToFeed(cdFeedImage)
             }
             
-            coreDataStack.saveContext(context: managedContext)
-            completion(nil)
+            let error = coreDataStack.saveContext(context: managedContext)
+            completion(error)
         }
     }
     
@@ -316,6 +331,10 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     private func testSpecificStoreURL() -> URL {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.store")
     }
+    
+    private func anyErrorManagedObjectContext(allowFetch: Bool = false) -> NSManagedObjectContext {
+        ErrorManagedObjectContext(concurrencyType: .privateQueueConcurrencyType, allowFetch: allowFetch)
+    }
 	
 }
 
@@ -340,31 +359,27 @@ extension FeedStoreChallengeTests: FailableRetrieveFeedStoreSpecs {
 
 		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
 	}
-    
-    private func anyErrorManagedObjectContext() -> NSManagedObjectContext {
-        ErrorManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-    }
 
 }
 
-//extension FeedStoreChallengeTests: FailableInsertFeedStoreSpecs {
-//
-//	func test_insert_deliversErrorOnInsertionError() {
-////		let sut = makeSUT()
-////
-////		assertThatInsertDeliversErrorOnInsertionError(on: sut)
-//	}
-//
-//	func test_insert_hasNoSideEffectsOnInsertionError() {
-////		let sut = makeSUT()
-////
-////		assertThatInsertHasNoSideEffectsOnInsertionError(on: sut)
-//	}
-//
-//}
+extension FeedStoreChallengeTests: FailableInsertFeedStoreSpecs {
 
-//extension FeedStoreChallengeTests: FailableDeleteFeedStoreSpecs {
-//
+	func test_insert_deliversErrorOnInsertionError() {
+        let sut = makeSUT(context: anyErrorManagedObjectContext())
+
+		assertThatInsertDeliversErrorOnInsertionError(on: sut)
+	}
+
+	func test_insert_hasNoSideEffectsOnInsertionError() {
+        let sut = makeSUT(context: anyErrorManagedObjectContext(allowFetch: true))
+
+		assertThatInsertHasNoSideEffectsOnInsertionError(on: sut)
+	}
+
+}
+
+extension FeedStoreChallengeTests: FailableDeleteFeedStoreSpecs {
+
 //	func test_delete_deliversErrorOnDeletionError() {
 ////		let sut = makeSUT()
 ////
