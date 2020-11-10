@@ -126,8 +126,10 @@ final class CoreDataFeedStore: FeedStore {
     
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        let error = deleteCaches()
-        completion(error)
+        managedContext.perform { [unowned self] in
+            let error = deleteCaches()
+            completion(error)
+        }
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
@@ -257,9 +259,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_storeSideEffects_runSerially() {
-//		let sut = makeSUT()
-//
-//		assertThatSideEffectsRunSerially(on: sut)
+		let sut = makeSUT()
+
+		assertThatSideEffectsRunSerially(on: sut)
 	}
 	
 	// - MARK: Helpers
