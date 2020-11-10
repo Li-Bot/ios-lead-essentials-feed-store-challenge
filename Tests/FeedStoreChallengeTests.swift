@@ -41,6 +41,17 @@ final class CoreDataStack {
         self.storeURL = storeURL
     }
     
+    func deleteAll(of entityName: String, context: NSManagedObjectContext? = nil) {
+        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+
+        do {
+            try persistentStoreCoordinator?.execute(deleteRequest, with: context ?? managedContext)
+        } catch {
+
+        }
+    }
+    
     @discardableResult
     func saveContext(context: NSManagedObjectContext) -> Error? {
         if !context.hasChanges {
@@ -109,6 +120,8 @@ final class CoreDataFeedStore: FeedStore {
         managedContext.perform { [unowned self] in
             let cacheEntityName = String(describing: CDCache.self)
             let cacheEntityDescription = NSEntityDescription.entity(forEntityName: cacheEntityName, in: self.managedContext)!
+            
+            coreDataStack.deleteAll(of: cacheEntityName, context: managedContext)
             
             let feedImageEntityName = String(describing: CDFeedImage.self)
             let feedImageEntityDescription = NSEntityDescription.entity(forEntityName: feedImageEntityName, in: self.managedContext)!
@@ -201,9 +214,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_insert_overridesPreviouslyInsertedCacheValues() {
-//		let sut = makeSUT()
-//
-//		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
+		let sut = makeSUT()
+
+		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
 	}
 
 	func test_delete_deliversNoErrorOnEmptyCache() {
