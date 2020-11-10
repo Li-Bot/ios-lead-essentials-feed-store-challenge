@@ -41,6 +41,19 @@ final class CoreDataStack {
         self.storeURL = storeURL
     }
     
+    @discardableResult
+    func saveContext(context: NSManagedObjectContext) -> Error? {
+        if !context.hasChanges {
+            return nil
+        }
+        do {
+            try context.save()
+            return nil
+        } catch {
+            return error
+        }
+    }
+    
 }
 
 
@@ -113,7 +126,7 @@ final class CoreDataFeedStore: FeedStore {
                 cdCache.addToFeed(cdFeedImage)
             }
             
-            self.saveContext(context: managedContext)
+            coreDataStack.saveContext(context: managedContext)
             completion(nil)
         }
     }
@@ -125,19 +138,6 @@ final class CoreDataFeedStore: FeedStore {
             completion(.found(feed: feed, timestamp: cdCache.timestamp))
         } else {
             completion(.empty)
-        }
-    }
-    
-    @discardableResult
-    private func saveContext(context: NSManagedObjectContext) -> Error? {
-        if !context.hasChanges {
-            return nil
-        }
-        do {
-            try context.save()
-            return nil
-        } catch {
-            return error
         }
     }
     
