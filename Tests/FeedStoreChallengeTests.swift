@@ -125,12 +125,13 @@ final class CoreDataFeedStore: FeedStore {
     
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
+        deleteCaches()
         completion(nil)
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         managedContext.perform { [unowned self] in
-            coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
+            deleteCaches()
             
             let cdCache = CDCache(context: managedContext)
             cdCache.timestamp = timestamp
@@ -158,6 +159,10 @@ final class CoreDataFeedStore: FeedStore {
         } else {
             completion(.empty)
         }
+    }
+    
+    private func deleteCaches() {
+        coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
     }
     
 }
@@ -244,9 +249,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_delete_emptiesPreviouslyInsertedCache() {
-//		let sut = makeSUT()
-//
-//		assertThatDeleteEmptiesPreviouslyInsertedCache(on: sut)
+		let sut = makeSUT()
+
+		assertThatDeleteEmptiesPreviouslyInsertedCache(on: sut)
 	}
 
 	func test_storeSideEffects_runSerially() {
