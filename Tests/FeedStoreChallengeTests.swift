@@ -7,16 +7,35 @@ import FeedStoreChallenge
 import CoreData
 
 
+final class ErrorManagedObjectContext: NSManagedObjectContext {
+    
+    override func fetch(_ request: NSFetchRequest<NSFetchRequestResult>) throws -> [Any] {
+        throw anyNSError()
+    }
+    
+    private func anyNSError() -> NSError {
+        NSError(domain: "any error", code: NSPersistentStoreOperationError, userInfo: nil)
+    }
+    
+}
+
+struct PersistentStoreDescription {
+    
+    let storeClass: AnyClass
+    let storeType: String
+    
+}
+
 final class CoreDataStack {
     
     lazy var managedContext: NSManagedObjectContext = {
+        if let context = managedObjectContext {
+            context.persistentStoreCoordinator = persistentStoreCoordinator
+            return context
+        }
         var managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
         return managedObjectContext
-    }()
-    
-    private lazy var managedObjectModel: NSManagedObjectModel = {
-        return NSManagedObjectModel.mergedModel(from: [Bundle(for: CoreDataStack.self)])!
     }()
     
     private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator? = {
@@ -35,10 +54,17 @@ final class CoreDataStack {
         return coordinator
     }()
     
+    private lazy var managedObjectModel: NSManagedObjectModel = {
+        return NSManagedObjectModel.mergedModel(from: [Bundle(for: CoreDataStack.self)])!
+    }()
+    
     private let storeURL: URL
     
-    init(storeURL: URL) {
+    private let managedObjectContext: NSManagedObjectContext?
+    
+    init(storeURL: URL, context: NSManagedObjectContext? = nil) {
         self.storeURL = storeURL
+        managedObjectContext = context
     }
     
     func deleteAll(of entityName: String, context: NSManagedObjectContext? = nil) -> Error? {
@@ -120,8 +146,8 @@ final class CoreDataFeedStore: FeedStore {
     
     private let coreDataStack: CoreDataStack
     
-    init(storeURL: URL) {
-        coreDataStack = CoreDataStack(storeURL: storeURL)
+    init(coreDataStack: CoreDataStack) {
+        self.coreDataStack = coreDataStack
     }
     
     
@@ -156,11 +182,16 @@ final class CoreDataFeedStore: FeedStore {
     
     func retrieve(completion: @escaping RetrievalCompletion) {
         let fetchRequest: NSFetchRequest<CDCache> = CDCache.fetchRequest()
-        if let cdCache = try? managedContext.fetch(fetchRequest).first {
-            let feed = FeedMapper(feed: cdCache.feed).map()
-            completion(.found(feed: feed, timestamp: cdCache.timestamp))
-        } else {
-            completion(.empty)
+        do {
+            let cdCaches = try managedContext.fetch(fetchRequest)
+            if let cdCache = cdCaches.first {
+                let feed = FeedMapper(feed: cdCache.feed).map()
+                completion(.found(feed: feed, timestamp: cdCache.timestamp))
+            } else {
+                completion(.empty)
+            }
+        } catch {
+            completion(.failure(error))
         }
     }
     
@@ -266,8 +297,10 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	
 	// - MARK: Helpers
 	
-	private func makeSUT() -> FeedStore {
-        let sut = CoreDataFeedStore(storeURL: testSpecificStoreURL())
+    private func makeSUT(storeURL: URL? = nil, context: NSManagedObjectContext? = nil) -> FeedStore {
+        let url = storeURL ?? testSpecificStoreURL()
+        let coreDataStack = CoreDataStack(storeURL: url, context: context)
+        let sut = CoreDataFeedStore(coreDataStack: coreDataStack)
         
         return sut
 	}
@@ -294,21 +327,25 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 //
 //  ***********************
 
-//extension FeedStoreChallengeTests: FailableRetrieveFeedStoreSpecs {
-//
-//	func test_retrieve_deliversFailureOnRetrievalError() {
-////		let sut = makeSUT()
-////
-////		assertThatRetrieveDeliversFailureOnRetrievalError(on: sut)
-//	}
-//
-//	func test_retrieve_hasNoSideEffectsOnFailure() {
-////		let sut = makeSUT()
-////
-////		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
-//	}
-//
-//}
+extension FeedStoreChallengeTests: FailableRetrieveFeedStoreSpecs {
+
+	func test_retrieve_deliversFailureOnRetrievalError() {
+        let sut = makeSUT(context: anyErrorManagedObjectContext())
+
+		assertThatRetrieveDeliversFailureOnRetrievalError(on: sut)
+	}
+
+	func test_retrieve_hasNoSideEffectsOnFailure() {
+		let sut = makeSUT(context: anyErrorManagedObjectContext())
+
+		assertThatRetrieveHasNoSideEffectsOnFailure(on: sut)
+	}
+    
+    private func anyErrorManagedObjectContext() -> NSManagedObjectContext {
+        ErrorManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+    }
+
+}
 
 //extension FeedStoreChallengeTests: FailableInsertFeedStoreSpecs {
 //
