@@ -44,6 +44,37 @@ final class CoreDataStack {
 }
 
 
+final class FeedMapper {
+    
+    private let feed: Set<CDFeedImage>
+    
+    init(feed: Set<CDFeedImage>) {
+        self.feed = feed
+    }
+    
+    func map() -> [LocalFeedImage] {
+        mapLocalsToModels(sort(feed))
+    }
+    
+    private func sort(_ feed: Set<CDFeedImage>) -> [CDFeedImage] {
+        feed.sorted { (firstFeedImage, secondFeedImage) -> Bool in
+            firstFeedImage.position < secondFeedImage.position
+        }
+    }
+    
+    private func mapLocalsToModels(_ feed: [CDFeedImage]) -> [LocalFeedImage] {
+        feed.map { cdFeedImage -> LocalFeedImage in
+            LocalFeedImage(id: cdFeedImage.id,
+                           description: cdFeedImage.desc,
+                           location: cdFeedImage.location,
+                           url: cdFeedImage.url
+            )
+        }
+    }
+    
+}
+
+
 final class CoreDataFeedStore: FeedStore {
     
     private var managedContext: NSManagedObjectContext {
@@ -90,26 +121,10 @@ final class CoreDataFeedStore: FeedStore {
     func retrieve(completion: @escaping RetrievalCompletion) {
         let fetchRequest: NSFetchRequest<CDCache> = CDCache.fetchRequest()
         if let cdCache = try? managedContext.fetch(fetchRequest).first {
-            let feed = mapLocalsToModels(sortLocals(cdCache.feed))
+            let feed = FeedMapper(feed: cdCache.feed).map()
             completion(.found(feed: feed, timestamp: cdCache.timestamp))
         } else {
             completion(.empty)
-        }
-    }
-    
-    private func sortLocals(_ feed: Set<CDFeedImage>) -> [CDFeedImage] {
-        feed.sorted { (firstFeedImage, secondFeedImage) -> Bool in
-            firstFeedImage.position < secondFeedImage.position
-        }
-    }
-    
-    private func mapLocalsToModels(_ feed: [CDFeedImage]) -> [LocalFeedImage] {
-        feed.map { cdFeedImage -> LocalFeedImage in
-            LocalFeedImage(id: cdFeedImage.id,
-                           description: cdFeedImage.desc,
-                           location: cdFeedImage.location,
-                           url: cdFeedImage.url
-            )
         }
     }
     
