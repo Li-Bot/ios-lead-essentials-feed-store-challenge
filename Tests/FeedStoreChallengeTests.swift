@@ -99,6 +99,14 @@ final class FeedMapper {
 }
 
 
+extension NSManagedObject {
+    
+    static var entityName: String {
+        String(describing: Self.self)
+    }
+    
+}
+
 final class CoreDataFeedStore: FeedStore {
     
     private var managedContext: NSManagedObjectContext {
@@ -118,19 +126,13 @@ final class CoreDataFeedStore: FeedStore {
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         managedContext.perform { [unowned self] in
-            let cacheEntityName = String(describing: CDCache.self)
-            let cacheEntityDescription = NSEntityDescription.entity(forEntityName: cacheEntityName, in: self.managedContext)!
+            coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
             
-            coreDataStack.deleteAll(of: cacheEntityName, context: managedContext)
-            
-            let feedImageEntityName = String(describing: CDFeedImage.self)
-            let feedImageEntityDescription = NSEntityDescription.entity(forEntityName: feedImageEntityName, in: self.managedContext)!
-            
-            let cdCache = CDCache(entity: cacheEntityDescription, insertInto: self.managedContext)
+            let cdCache = CDCache(entity: CDCache.entity(), insertInto: managedContext)
             cdCache.timestamp = timestamp
             
             for (index, feedImage) in feed.enumerated() {
-                let cdFeedImage = CDFeedImage(entity: feedImageEntityDescription, insertInto: managedContext)
+                let cdFeedImage = CDFeedImage(entity: CDFeedImage.entity(), insertInto: managedContext)
                 cdFeedImage.id = feedImage.id
                 cdFeedImage.desc = feedImage.description
                 cdFeedImage.location = feedImage.location
