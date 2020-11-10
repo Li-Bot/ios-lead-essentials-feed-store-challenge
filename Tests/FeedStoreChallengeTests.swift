@@ -41,14 +41,15 @@ final class CoreDataStack {
         self.storeURL = storeURL
     }
     
-    func deleteAll(of entityName: String, context: NSManagedObjectContext? = nil) {
+    func deleteAll(of entityName: String, context: NSManagedObjectContext? = nil) -> Error? {
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
 
         do {
             try persistentStoreCoordinator?.execute(deleteRequest, with: context ?? managedContext)
+            return nil
         } catch {
-
+            return error
         }
     }
     
@@ -125,8 +126,8 @@ final class CoreDataFeedStore: FeedStore {
     
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        deleteCaches()
-        completion(nil)
+        let error = deleteCaches()
+        completion(error)
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
@@ -161,7 +162,8 @@ final class CoreDataFeedStore: FeedStore {
         }
     }
     
-    private func deleteCaches() {
+    @discardableResult
+    private func deleteCaches() -> Error? {
         coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
     }
     
