@@ -7,16 +7,16 @@ import FeedStoreChallenge
 import CoreData
 
 
-final class CoreDataFeedStore: FeedStore {
+final class CoreDataStack {
     
-    private lazy var documentsDirectory: URL = {
-        let urls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-
-        return urls[urls.count-1]
+    lazy var managedContext: NSManagedObjectContext = {
+        var managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
+        return managedObjectContext
     }()
     
     private lazy var managedObjectModel: NSManagedObjectModel = {
-        return NSManagedObjectModel.mergedModel(from: [Bundle(for: CoreDataFeedStore.self)])!
+        return NSManagedObjectModel.mergedModel(from: [Bundle(for: CoreDataStack.self)])!
     }()
     
     private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator? = {
@@ -24,11 +24,10 @@ final class CoreDataFeedStore: FeedStore {
         let storeOptions = [NSMigratePersistentStoresAutomaticallyOption : true,
                             NSInferMappingModelAutomaticallyOption : true
         ]
-        let url = documentsDirectory.appendingPathComponent("FeedStoreModel.sqlite")
 
         do {
-            try coordinator!.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: url, options: storeOptions)
-        } catch{
+            try coordinator!.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: storeOptions)
+        } catch {
             coordinator = nil
             print("Unresolved error \(error)")
             abort()
@@ -36,14 +35,25 @@ final class CoreDataFeedStore: FeedStore {
         return coordinator
     }()
     
-    private lazy var managedContext: NSManagedObjectContext = {
-        var managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
-        return managedObjectContext
-    }()
+    private let storeURL: URL
     
-    init() {
-        _ = managedContext
+    init(storeURL: URL) {
+        self.storeURL = storeURL
+    }
+    
+}
+
+
+final class CoreDataFeedStore: FeedStore {
+    
+    private var managedContext: NSManagedObjectContext {
+        coreDataStack.managedContext
+    }
+    
+    private let coreDataStack: CoreDataStack
+    
+    init(storeURL: URL) {
+        coreDataStack = CoreDataStack(storeURL: storeURL)
     }
     
     
@@ -62,12 +72,13 @@ final class CoreDataFeedStore: FeedStore {
             let cdCache = CDCache(entity: cacheEntityDescription, insertInto: self.managedContext)
             cdCache.timestamp = timestamp
             
-            for feedImage in feed {
+            for (index, feedImage) in feed.enumerated() {
                 let cdFeedImage = CDFeedImage(entity: feedImageEntityDescription, insertInto: managedContext)
                 cdFeedImage.id = feedImage.id
                 cdFeedImage.desc = feedImage.description
                 cdFeedImage.location = feedImage.location
                 cdFeedImage.url = feedImage.url
+                cdFeedImage.position = Int16(index)
                 cdCache.addToFeed(cdFeedImage)
             }
             
@@ -79,13 +90,20 @@ final class CoreDataFeedStore: FeedStore {
     func retrieve(completion: @escaping RetrievalCompletion) {
         let fetchRequest: NSFetchRequest<CDCache> = CDCache.fetchRequest()
         if let cdCache = try? managedContext.fetch(fetchRequest).first {
-            completion(.found(feed: mapLocalsToModels(cdCache.feed), timestamp: cdCache.timestamp))
+            let feed = mapLocalsToModels(sortLocals(cdCache.feed))
+            completion(.found(feed: feed, timestamp: cdCache.timestamp))
         } else {
             completion(.empty)
         }
     }
     
-    private func mapLocalsToModels(_ feed: Set<CDFeedImage>) -> [LocalFeedImage] {
+    private func sortLocals(_ feed: Set<CDFeedImage>) -> [CDFeedImage] {
+        feed.sorted { (firstFeedImage, secondFeedImage) -> Bool in
+            firstFeedImage.position < secondFeedImage.position
+        }
+    }
+    
+    private func mapLocalsToModels(_ feed: [CDFeedImage]) -> [LocalFeedImage] {
         feed.map { cdFeedImage -> LocalFeedImage in
             LocalFeedImage(id: cdFeedImage.id,
                            description: cdFeedImage.desc,
@@ -128,8 +146,7 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     override func setUp() {
         super.setUp()
         
-        let storeURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.sqlite")
-        _ = try? FileManager.default.removeItem(at: storeURL)
+        setupEmptyStoreState()
     }
 
 	func test_retrieve_deliversEmptyOnEmptyCache() {
@@ -207,10 +224,22 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	// - MARK: Helpers
 	
 	private func makeSUT() -> FeedStore {
-		let sut = CoreDataFeedStore()
+        let sut = CoreDataFeedStore(storeURL: testSpecificStoreURL())
         
         return sut
 	}
+    
+    private func setupEmptyStoreState() {
+        deleteStoreFile()
+    }
+    
+    private func deleteStoreFile() {
+        _ = try? FileManager.default.removeItem(at: testSpecificStoreURL())
+    }
+    
+    private func testSpecificStoreURL() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.store")
+    }
 	
 }
 

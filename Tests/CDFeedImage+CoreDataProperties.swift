@@ -13,6 +13,7 @@ extension CDFeedImage {
     @NSManaged public var desc: String?
     @NSManaged public var location: String?
     @NSManaged public var url: URL
+    @NSManaged public var position: Int16
 
 }
 
