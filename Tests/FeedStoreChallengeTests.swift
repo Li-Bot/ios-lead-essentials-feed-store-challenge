@@ -307,18 +307,6 @@ final class CoreDataFeedStore: FeedStore {
 
 class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	
-    //  ***********************
-    //
-    //  Follow the TDD process:
-    //
-    //  1. Uncomment and run one test at a time (run tests with CMD+U).
-    //  2. Do the minimum to make the test pass and commit.
-    //  3. Refactor if needed and commit again.
-    //
-    //  Repeat this process until all tests are passing.
-    //
-    //  ***********************
-    
     override func setUp() {
         super.setUp()
         
@@ -424,14 +412,6 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     }
 	
 }
-
-//  ***********************
-//
-//  Uncomment the following tests if your implementation has failable operations.
-//
-//  Otherwise, delete the commented out code!
-//
-//  ***********************
 
 extension FeedStoreChallengeTests: FailableRetrieveFeedStoreSpecs {
 
