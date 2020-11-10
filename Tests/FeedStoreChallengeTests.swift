@@ -105,6 +105,10 @@ extension NSManagedObject {
         String(describing: Self.self)
     }
     
+    convenience init(context: NSManagedObjectContext) {
+        self.init(entity: Self.entity(), insertInto: context)
+    }
+    
 }
 
 final class CoreDataFeedStore: FeedStore {
@@ -128,11 +132,11 @@ final class CoreDataFeedStore: FeedStore {
         managedContext.perform { [unowned self] in
             coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
             
-            let cdCache = CDCache(entity: CDCache.entity(), insertInto: managedContext)
+            let cdCache = CDCache(context: managedContext)
             cdCache.timestamp = timestamp
             
             for (index, feedImage) in feed.enumerated() {
-                let cdFeedImage = CDFeedImage(entity: CDFeedImage.entity(), insertInto: managedContext)
+                let cdFeedImage = CDFeedImage(context: managedContext)
                 cdFeedImage.id = feedImage.id
                 cdFeedImage.desc = feedImage.description
                 cdFeedImage.location = feedImage.location
