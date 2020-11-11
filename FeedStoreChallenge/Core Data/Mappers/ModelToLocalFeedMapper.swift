@@ -11,7 +11,7 @@ internal final class ModelToLocalFeedMapper {
     }
     
     func map() -> [LocalFeedImage] {
-        mapLocalsToModels(sort(feed))
+        mapModelsToLocals(sort(feed))
     }
     
     private func sort(_ feed: Set<CDFeedImage>) -> [CDFeedImage] {
@@ -20,7 +20,7 @@ internal final class ModelToLocalFeedMapper {
         }
     }
     
-    private func mapLocalsToModels(_ feed: [CDFeedImage]) -> [LocalFeedImage] {
+    private func mapModelsToLocals(_ feed: [CDFeedImage]) -> [LocalFeedImage] {
         feed.map { cdFeedImage -> LocalFeedImage in
             LocalFeedImage(id: cdFeedImage.id,
                            description: cdFeedImage.desc,
