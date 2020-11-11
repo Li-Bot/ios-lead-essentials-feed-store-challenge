@@ -21,11 +21,11 @@ internal final class ModelToLocalFeedMapper {
     }
     
     private func mapModelsToLocals(_ feed: [CDFeedImage]) -> [LocalFeedImage] {
-        feed.map { cdFeedImage -> LocalFeedImage in
-            LocalFeedImage(id: cdFeedImage.id,
-                           description: cdFeedImage.desc,
-                           location: cdFeedImage.location,
-                           url: cdFeedImage.url
+        feed.map { feedImage -> LocalFeedImage in
+            LocalFeedImage(id: feedImage.id,
+                           description: feedImage.desc,
+                           location: feedImage.location,
+                           url: feedImage.url
             )
         }
     }

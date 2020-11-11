@@ -18,10 +18,10 @@ internal final class LocalToModelFeedMapper {
     @discardableResult
     func map() -> [CDFeedImage] {
         var modelFeed = [CDFeedImage]()
-        for (index, feedImage) in feed.enumerated() {
-            let cdFeedImage = createFeedImage(from: feedImage, position: index)
-            cache.addToFeed(cdFeedImage)
-            modelFeed.append(cdFeedImage)
+        for (index, localFeedImage) in feed.enumerated() {
+            let modelFeedImage = createFeedImage(from: localFeedImage, position: index)
+            cache.addToFeed(modelFeedImage)
+            modelFeed.append(modelFeedImage)
         }
         return modelFeed
     }
