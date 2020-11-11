@@ -23,14 +23,16 @@ public final class CoreDataFeedStore: FeedStore {
     }
     
     public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        managedContext.perform { [unowned self] in
-            deleteCaches()
-            let cache = createCache(timestamp: timestamp)
+        managedContext.perform { [weak self] in
+            guard let self = self else { return }
             
-            let mapper = LocalToModelFeedMapper(feed: feed, cache: cache, context: managedContext)
+            self.deleteCaches()
+            let cache = self.createCache(timestamp: timestamp)
+            
+            let mapper = LocalToModelFeedMapper(feed: feed, cache: cache, context: self.managedContext)
             mapper.map()
             
-            let error = coreDataStack.saveContext(context: managedContext)
+            let error = self.coreDataStack.saveContext(context: self.managedContext)
             completion(error)
         }
     }
