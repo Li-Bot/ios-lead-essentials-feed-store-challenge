@@ -10,13 +10,6 @@ import XCTest
 import FeedStoreChallenge
 
 class FeedStoreIntegrationTests: XCTestCase {
-
-    //  ***********************
-    //
-    //  Uncomment and implement the following tests if your
-    //  implementation persists data to disk (e.g., CoreData/Realm)
-    //
-    //  ***********************
     
     override func setUp() {
         super.setUp()
@@ -31,9 +24,9 @@ class FeedStoreIntegrationTests: XCTestCase {
     }
     
     func test_retrieve_deliversEmptyOnEmptyCache() {
-//        let sut = makeSUT()
-//
-//        expect(sut, toRetrieve: .empty)
+        let sut = makeSUT()
+
+        expect(sut, toRetrieve: .empty)
     }
 
     func test_retrieve_deliversFeedInsertedOnAnotherInstance() {
@@ -76,15 +69,26 @@ class FeedStoreIntegrationTests: XCTestCase {
     // - MARK: Helpers
     
     private func makeSUT() -> FeedStore {
-        fatalError("Must be implemented")
+        let url = testSpecificStoreURL()
+        let coreDataStack = ProductionCoreDataStack(storeURL: url)
+        let sut = CoreDataFeedStore(coreDataStack: coreDataStack)
+        return sut
+    }
+    
+    private func testSpecificStoreURL() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.store")
     }
     
     private func setupEmptyStoreState() {
-
+        deleteStoreFile()
     }
 
     private func undoStoreSideEffects() {
-
+        deleteStoreFile()
+    }
+    
+    private func deleteStoreFile() {
+        _ = try? FileManager.default.removeItem(at: testSpecificStoreURL())
     }
     
 }
