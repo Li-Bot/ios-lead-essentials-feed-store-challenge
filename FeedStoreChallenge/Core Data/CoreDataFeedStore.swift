@@ -16,8 +16,10 @@ public final class CoreDataFeedStore: FeedStore {
     }
     
     public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        managedContext.perform { [unowned self] in
-            let error = deleteCaches()
+        managedContext.perform { [weak self] in
+            guard let self = self else { return }
+            
+            let error = self.deleteCaches()
             completion(error)
         }
     }
