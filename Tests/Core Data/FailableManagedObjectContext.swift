@@ -27,8 +27,6 @@ final class FailableManagedObjectContext: NSManagedObjectContext {
         throw anyNSError()
     }
     
-    
-    
     override func save() throws {
         throw anyNSError()
     }
