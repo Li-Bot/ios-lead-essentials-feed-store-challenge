@@ -25,9 +25,9 @@ public final class CoreDataFeedStore: FeedStore {
     public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         managedContext.perform { [unowned self] in
             deleteCaches()
-            let cdCache = createCache(timestamp: timestamp)
+            let cache = createCache(timestamp: timestamp)
             
-            let mapper = LocalToModelFeedMapper(feed: feed, cache: cdCache, context: managedContext)
+            let mapper = LocalToModelFeedMapper(feed: feed, cache: cache, context: managedContext)
             mapper.map()
             
             let error = coreDataStack.saveContext(context: managedContext)
@@ -60,9 +60,9 @@ public final class CoreDataFeedStore: FeedStore {
     }
     
     private func createCache(timestamp: Date) -> CDCache {
-        let cdCache = CDCache(managedContext: managedContext)
-        cdCache.timestamp = timestamp
-        return cdCache
+        let cache = CDCache(managedContext: managedContext)
+        cache.timestamp = timestamp
+        return cache
     }
     
 }
