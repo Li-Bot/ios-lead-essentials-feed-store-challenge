@@ -12,7 +12,7 @@
         <attribute name="url" optional="YES" attributeType="URI"/>
     </entity>
     <elements>
-        <element name="CDFeedImage" positionX="-63" positionY="-18" width="128" height="118"/>
         <element name="CDCache" positionX="12.08203125" positionY="-141.484375" width="128" height="73"/>
+        <element name="CDFeedImage" positionX="-63" positionY="-18" width="128" height="118"/>
     </elements>
 </model>
