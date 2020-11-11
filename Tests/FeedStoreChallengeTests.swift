@@ -86,6 +86,21 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 
 		assertThatSideEffectsRunSerially(on: sut)
 	}
+    
+    func test_retrieve_doesNotDeliverResultAfterSUTInstanceHasBeenDeallocated() {
+        var sut: FeedStore? = makeSUT()
+        
+        var receivedResults = [RetrieveCachedFeedResult]()
+        sut?.retrieve { result in
+            receivedResults.append(result)
+        }
+        
+        // Ensuring that array is empty before we set sut to nil in case retrieve completion completes immediately (synchronously and not asynchronously).
+        receivedResults = []
+        sut = nil
+        
+        XCTAssertTrue(receivedResults.isEmpty)
+    }
 	
 	// - MARK: Helpers
 	
