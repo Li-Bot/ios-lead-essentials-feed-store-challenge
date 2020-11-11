@@ -36,18 +36,22 @@ public final class CoreDataFeedStore: FeedStore {
     }
     
     public func retrieve(completion: @escaping RetrievalCompletion) {
-        let fetchRequest: NSFetchRequest<CDCache> = CDCache.fetchRequest()
         do {
-            let cdCaches = try managedContext.fetch(fetchRequest)
-            if let cdCache = cdCaches.first {
-                let feed = ModelToLocalFeedMapper(feed: cdCache.feed).map()
-                completion(.found(feed: feed, timestamp: cdCache.timestamp))
+            if let cache = try fetchCache() {
+                let feed = ModelToLocalFeedMapper(feed: cache.feed).map()
+                completion(.found(feed: feed, timestamp: cache.timestamp))
             } else {
                 completion(.empty)
             }
         } catch {
             completion(.failure(error))
         }
+    }
+    
+    private func fetchCache() throws -> CDCache? {
+        let fetchRequest: NSFetchRequest<CDCache> = CDCache.fetchRequest()
+        let caches = try managedContext.fetch(fetchRequest)
+        return caches.first
     }
     
     @discardableResult
