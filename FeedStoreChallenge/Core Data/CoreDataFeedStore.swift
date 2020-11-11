@@ -40,15 +40,19 @@ public final class CoreDataFeedStore: FeedStore {
     }
     
     public func retrieve(completion: @escaping RetrievalCompletion) {
-        do {
-            if let cache = try fetchCache() {
-                let feed = ModelToLocalFeedMapper(feed: cache.feed).map()
-                completion(.found(feed: feed, timestamp: cache.timestamp))
-            } else {
-                completion(.empty)
+        managedContext.perform { [weak self] in
+            guard let self = self else { return }
+            
+            do {
+                if let cache = try self.fetchCache() {
+                    let feed = ModelToLocalFeedMapper(feed: cache.feed).map()
+                    completion(.found(feed: feed, timestamp: cache.timestamp))
+                } else {
+                    completion(.empty)
+                }
+            } catch {
+                completion(.failure(error))
             }
-        } catch {
-            completion(.failure(error))
         }
     }
     
