@@ -47,7 +47,7 @@ public final class CoreDataFeedStore: FeedStore {
         do {
             let cdCaches = try managedContext.fetch(fetchRequest)
             if let cdCache = cdCaches.first {
-                let feed = FeedMapper(feed: cdCache.feed).map()
+                let feed = ModelToLocalFeedMapper(feed: cdCache.feed).map()
                 completion(.found(feed: feed, timestamp: cdCache.timestamp))
             } else {
                 completion(.empty)
