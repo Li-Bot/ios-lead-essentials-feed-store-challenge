@@ -12,16 +12,15 @@ final class FailableCoreDataStack: CoreDataStack {
         return managedObjectContext
     }()
     
-    private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator? = {
-        var coordinator: NSPersistentStoreCoordinator? = FailablePersistentStoreCoordinator(managedObjectModel: managedObjectModel)
+    private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator = {
+        var coordinator = FailablePersistentStoreCoordinator(managedObjectModel: managedObjectModel)
         let storeOptions = [NSMigratePersistentStoresAutomaticallyOption : true,
                             NSInferMappingModelAutomaticallyOption : true
         ]
 
         do {
-            try coordinator!.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: storeOptions)
+            try coordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: storeOptions)
         } catch {
-            coordinator = nil
             print("Unresolved error \(error)")
             abort()
         }
@@ -50,7 +49,7 @@ final class FailableCoreDataStack: CoreDataStack {
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
 
         do {
-            try persistentStoreCoordinator?.execute(deleteRequest, with: context)
+            try persistentStoreCoordinator.execute(deleteRequest, with: context)
             return nil
         } catch {
             return error
