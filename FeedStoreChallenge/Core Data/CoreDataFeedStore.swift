@@ -15,7 +15,6 @@ public final class CoreDataFeedStore: FeedStore {
         self.coreDataStack = coreDataStack
     }
     
-    
     public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
         managedContext.perform { [unowned self] in
             let error = deleteCaches()
@@ -26,9 +25,7 @@ public final class CoreDataFeedStore: FeedStore {
     public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         managedContext.perform { [unowned self] in
             deleteCaches()
-            
-            let cdCache = CDCache(managedContext: managedContext)
-            cdCache.timestamp = timestamp
+            let cdCache = createCache(timestamp: timestamp)
             
             for (index, feedImage) in feed.enumerated() {
                 let cdFeedImage = CDFeedImage(managedContext: managedContext)
@@ -63,6 +60,12 @@ public final class CoreDataFeedStore: FeedStore {
     @discardableResult
     private func deleteCaches() -> Error? {
         coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
+    }
+    
+    private func createCache(timestamp: Date) -> CDCache {
+        let cdCache = CDCache(managedContext: managedContext)
+        cdCache.timestamp = timestamp
+        return cdCache
     }
     
 }
