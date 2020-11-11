@@ -27,15 +27,8 @@ public final class CoreDataFeedStore: FeedStore {
             deleteCaches()
             let cdCache = createCache(timestamp: timestamp)
             
-            for (index, feedImage) in feed.enumerated() {
-                let cdFeedImage = CDFeedImage(managedContext: managedContext)
-                cdFeedImage.id = feedImage.id
-                cdFeedImage.desc = feedImage.description
-                cdFeedImage.location = feedImage.location
-                cdFeedImage.url = feedImage.url
-                cdFeedImage.position = Int16(index)
-                cdCache.addToFeed(cdFeedImage)
-            }
+            let mapper = LocalToModelFeedMapper(feed: feed, cache: cdCache, context: managedContext)
+            mapper.map()
             
             let error = coreDataStack.saveContext(context: managedContext)
             completion(error)
