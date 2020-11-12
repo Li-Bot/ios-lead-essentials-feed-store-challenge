@@ -49,10 +49,7 @@ final class FailableCoreDataStack: CoreDataStack {
     }
     
     func saveContext(context: NSManagedObjectContext) throws {
-        if !context.hasChanges {
-            return
-        }
-        try context.save()
+        throw anyNSError()
     }
     
 }
