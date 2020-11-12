@@ -77,7 +77,7 @@ class FeedStoreIntegrationTests: XCTestCase {
     }
     
     private func testSpecificStoreURL() -> URL {
-        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.store")
+        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("FeedStoreModel.store")
     }
     
     private func setupEmptyStoreState() {
