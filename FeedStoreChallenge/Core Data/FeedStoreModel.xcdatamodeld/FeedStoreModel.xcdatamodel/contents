@@ -2,16 +2,17 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="17192" systemVersion="19E287" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="CDCache" representedClassName="CDCache" syncable="YES">
         <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
-        <relationship name="feed" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="CDFeedImage"/>
+        <relationship name="feed" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="CDFeedImage" inverseName="cache" inverseEntity="CDFeedImage"/>
     </entity>
     <entity name="CDFeedImage" representedClassName="CDFeedImage" syncable="YES">
         <attribute name="desc" optional="YES" attributeType="String"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="location" optional="YES" attributeType="String"/>
         <attribute name="url" attributeType="URI"/>
+        <relationship name="cache" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDCache" inverseName="feed" inverseEntity="CDCache"/>
     </entity>
     <elements>
         <element name="CDCache" positionX="12.08203125" positionY="-141.484375" width="128" height="73"/>
-        <element name="CDFeedImage" positionX="-63" positionY="-18" width="128" height="103"/>
+        <element name="CDFeedImage" positionX="-63" positionY="-18" width="128" height="118"/>
     </elements>
 </model>
