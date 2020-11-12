@@ -32,7 +32,6 @@
 		185DFABD255AF9D60014DBDF /* FeedStoreModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 185DFABB255AF9D60014DBDF /* FeedStoreModel.xcdatamodeld */; };
 		185DFADC255BF94A0014DBDF /* CoreDataFeedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185DFADB255BF9490014DBDF /* CoreDataFeedStore.swift */; };
 		185DFAE0255BF9770014DBDF /* ModelToLocalFeedMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185DFADF255BF9770014DBDF /* ModelToLocalFeedMapper.swift */; };
-		185DFAE9255C01420014DBDF /* LocalToModelFeedMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185DFAE8255C01420014DBDF /* LocalToModelFeedMapper.swift */; };
 		185DFAF0255C05C50014DBDF /* XCTestCase+MemoryLeakTrackingHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185DFAEE255C05C50014DBDF /* XCTestCase+MemoryLeakTrackingHelper.swift */; };
 /* End PBXBuildFile section */
 
@@ -75,7 +74,6 @@
 		185DFABC255AF9D60014DBDF /* FeedStoreModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = FeedStoreModel.xcdatamodel; sourceTree = "<group>"; };
 		185DFADB255BF9490014DBDF /* CoreDataFeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataFeedStore.swift; sourceTree = "<group>"; };
 		185DFADF255BF9770014DBDF /* ModelToLocalFeedMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelToLocalFeedMapper.swift; sourceTree = "<group>"; };
-		185DFAE8255C01420014DBDF /* LocalToModelFeedMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalToModelFeedMapper.swift; sourceTree = "<group>"; };
 		185DFAEE255C05C50014DBDF /* XCTestCase+MemoryLeakTrackingHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "XCTestCase+MemoryLeakTrackingHelper.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -210,7 +208,6 @@
 			isa = PBXGroup;
 			children = (
 				185DFADF255BF9770014DBDF /* ModelToLocalFeedMapper.swift */,
-				185DFAE8255C01420014DBDF /* LocalToModelFeedMapper.swift */,
 			);
 			path = Mappers;
 			sourceTree = "<group>";
@@ -343,7 +340,6 @@
 				08CE2BA62285BCB600183A1B /* FeedStore.swift in Sources */,
 				185DFAE0255BF9770014DBDF /* ModelToLocalFeedMapper.swift in Sources */,
 				185DFABD255AF9D60014DBDF /* FeedStoreModel.xcdatamodeld in Sources */,
-				185DFAE9255C01420014DBDF /* LocalToModelFeedMapper.swift in Sources */,
 				185DFAAE255AF94C0014DBDF /* CDCache+CoreDataProperties.swift in Sources */,
 				08CE2BA82285BCC600183A1B /* LocalFeedImage.swift in Sources */,
 			);

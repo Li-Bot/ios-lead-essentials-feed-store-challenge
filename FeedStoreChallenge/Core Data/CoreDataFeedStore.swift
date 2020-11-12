@@ -32,10 +32,7 @@ public final class CoreDataFeedStore: FeedStore {
                 completion(error)
                 return
             }
-            let cache = self.createCache(timestamp: timestamp)
-            
-            let mapper = LocalToModelFeedMapper(feed: feed, cache: cache, context: self.managedContext)
-            mapper.map()
+            _ = self.createCache(feed: feed, timestamp: timestamp)
             
             let error = self.coreDataStack.saveContext(context: self.managedContext)
             completion(error)
@@ -70,10 +67,26 @@ public final class CoreDataFeedStore: FeedStore {
         coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
     }
     
-    private func createCache(timestamp: Date) -> CDCache {
+    private func createCache(feed: [LocalFeedImage], timestamp: Date) -> CDCache {
         let cache = CDCache(managedContext: managedContext)
         cache.timestamp = timestamp
+        
+        for (index, localFeedImage) in feed.enumerated() {
+            let modelFeedImage = createFeedImage(from: localFeedImage, position: index)
+            cache.addToFeed(modelFeedImage)
+        }
+        
         return cache
+    }
+    
+    private func createFeedImage(from localFeedImage: LocalFeedImage, position: Int) -> CDFeedImage {
+        let feedImage = CDFeedImage(managedContext: managedContext)
+        feedImage.id = localFeedImage.id
+        feedImage.desc = localFeedImage.description
+        feedImage.location = localFeedImage.location
+        feedImage.url = localFeedImage.url
+        feedImage.position = Int16(position)
+        return feedImage
     }
     
 }
