@@ -49,7 +49,7 @@ public final class CoreDataFeedStore: FeedStore {
             
             do {
                 if let cache = try self.fetchCache() {
-                    let feed = ModelToLocalFeedMapper(feed: cache.feed).map()
+                    let feed = ModelToLocalFeedMapper(feed: cache.genericFeed).map()
                     completion(.found(feed: feed, timestamp: cache.timestamp))
                 } else {
                     completion(.empty)
@@ -74,21 +74,20 @@ public final class CoreDataFeedStore: FeedStore {
         let cache = CDCache(managedContext: managedContext)
         cache.timestamp = timestamp
         
-        for (index, localFeedImage) in feed.enumerated() {
-            let modelFeedImage = createFeedImage(from: localFeedImage, position: index)
+        for localFeedImage in feed {
+            let modelFeedImage = createFeedImage(from: localFeedImage)
             cache.addToFeed(modelFeedImage)
         }
         
         return cache
     }
     
-    private func createFeedImage(from localFeedImage: LocalFeedImage, position: Int) -> CDFeedImage {
+    private func createFeedImage(from localFeedImage: LocalFeedImage) -> CDFeedImage {
         let feedImage = CDFeedImage(managedContext: managedContext)
         feedImage.id = localFeedImage.id
         feedImage.desc = localFeedImage.description
         feedImage.location = localFeedImage.location
         feedImage.url = localFeedImage.url
-        feedImage.position = Int16(position)
         return feedImage
     }
     

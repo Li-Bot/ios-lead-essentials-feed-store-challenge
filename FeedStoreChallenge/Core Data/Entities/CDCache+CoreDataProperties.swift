@@ -10,7 +10,11 @@ extension CDCache {
     }
 
     @NSManaged public var timestamp: Date
-    @NSManaged public var feed: Set<CDFeedImage>
+    @NSManaged public var feed: NSOrderedSet
+    
+    var genericFeed: [CDFeedImage] {
+        feed.array as! [CDFeedImage]
+    }
 
 }
 
@@ -24,10 +28,10 @@ extension CDCache {
     @NSManaged public func removeFromFeed(_ value: CDFeedImage)
 
     @objc(addFeed:)
-    @NSManaged public func addToFeed(_ values: NSSet)
+    @NSManaged public func addToFeed(_ values: NSOrderedSet)
 
     @objc(removeFeed:)
-    @NSManaged public func removeFromFeed(_ values: NSSet)
+    @NSManaged public func removeFromFeed(_ values: NSOrderedSet)
 
 }
 

@@ -4,20 +4,14 @@ import Foundation
 
 internal final class ModelToLocalFeedMapper {
     
-    private let feed: Set<CDFeedImage>
+    private let feed: [CDFeedImage]
     
-    init(feed: Set<CDFeedImage>) {
+    init(feed: [CDFeedImage]) {
         self.feed = feed
     }
     
     func map() -> [LocalFeedImage] {
-        mapModelsToLocals(sort(feed))
-    }
-    
-    private func sort(_ feed: Set<CDFeedImage>) -> [CDFeedImage] {
-        feed.sorted { (firstFeedImage, secondFeedImage) -> Bool in
-            firstFeedImage.position < secondFeedImage.position
-        }
+        mapModelsToLocals(feed)
     }
     
     private func mapModelsToLocals(_ feed: [CDFeedImage]) -> [LocalFeedImage] {

@@ -8,11 +8,10 @@
         <attribute name="desc" optional="YES" attributeType="String"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="location" optional="YES" attributeType="String"/>
-        <attribute name="position" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="url" attributeType="URI"/>
     </entity>
     <elements>
         <element name="CDCache" positionX="12.08203125" positionY="-141.484375" width="128" height="73"/>
-        <element name="CDFeedImage" positionX="-63" positionY="-18" width="128" height="118"/>
+        <element name="CDFeedImage" positionX="-63" positionY="-18" width="128" height="103"/>
     </elements>
 </model>
