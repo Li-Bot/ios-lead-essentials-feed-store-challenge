@@ -33,14 +33,13 @@ public final class CoreDataFeedStore: FeedStore {
             
             do {
                 try self.deleteCaches()
+                _ = self.createCache(feed: feed, timestamp: timestamp)
+                
+                let error = self.coreDataStack.saveContext(context: self.managedContext)
+                completion(error)
             } catch {
                 completion(error)
-                return
             }
-            _ = self.createCache(feed: feed, timestamp: timestamp)
-            
-            let error = self.coreDataStack.saveContext(context: self.managedContext)
-            completion(error)
         }
     }
     
