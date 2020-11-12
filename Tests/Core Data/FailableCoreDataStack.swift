@@ -44,16 +44,11 @@ final class FailableCoreDataStack: CoreDataStack {
         self.allowFetch = allowFetch
     }
     
-    func deleteAll(of entityName: String, context: NSManagedObjectContext) -> Error? {
+    func deleteAll(of entityName: String, context: NSManagedObjectContext) throws {
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
 
-        do {
-            try persistentStoreCoordinator.execute(deleteRequest, with: context)
-            return nil
-        } catch {
-            return error
-        }
+        try persistentStoreCoordinator.execute(deleteRequest, with: context)
     }
     
     @discardableResult

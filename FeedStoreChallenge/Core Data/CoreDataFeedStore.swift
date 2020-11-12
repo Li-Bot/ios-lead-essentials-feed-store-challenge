@@ -18,9 +18,12 @@ public final class CoreDataFeedStore: FeedStore {
     public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
         managedContext.perform { [weak self] in
             guard let self = self else { return }
-            
-            let error = self.deleteCaches()
-            completion(error)
+            do {
+                try self.deleteCaches()
+                completion(nil)
+            } catch {
+                completion(error)
+            }
         }
     }
     
@@ -28,7 +31,9 @@ public final class CoreDataFeedStore: FeedStore {
         managedContext.perform { [weak self] in
             guard let self = self else { return }
             
-            if let error = self.deleteCaches() {
+            do {
+                try self.deleteCaches()
+            } catch {
                 completion(error)
                 return
             }
@@ -62,9 +67,8 @@ public final class CoreDataFeedStore: FeedStore {
         return caches.first
     }
     
-    @discardableResult
-    private func deleteCaches() -> Error? {
-        coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
+    private func deleteCaches() throws {
+        try coreDataStack.deleteAll(of: CDCache.entityName, context: managedContext)
     }
     
     private func createCache(feed: [LocalFeedImage], timestamp: Date) -> CDCache {
