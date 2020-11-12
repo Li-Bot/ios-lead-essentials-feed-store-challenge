@@ -13,7 +13,7 @@ final class FailableCoreDataStack: CoreDataStack {
     }()
     
     private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator = {
-        var coordinator = FailablePersistentStoreCoordinator(managedObjectModel: managedObjectModel)
+        var coordinator = NSPersistentStoreCoordinator(managedObjectModel: managedObjectModel)
         let storeOptions = [NSMigratePersistentStoresAutomaticallyOption : true,
                             NSInferMappingModelAutomaticallyOption : true
         ]
@@ -45,10 +45,7 @@ final class FailableCoreDataStack: CoreDataStack {
     }
     
     func deleteAll(of entityName: String, context: NSManagedObjectContext) throws {
-        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-
-        try persistentStoreCoordinator.execute(deleteRequest, with: context)
+        throw anyNSError()
     }
     
     func saveContext(context: NSManagedObjectContext) throws {
