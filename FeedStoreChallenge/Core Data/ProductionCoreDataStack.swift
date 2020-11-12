@@ -43,17 +43,11 @@ public final class ProductionCoreDataStack: CoreDataStack {
         try persistentStoreCoordinator.execute(deleteRequest, with: context)
     }
     
-    @discardableResult
-    public func saveContext(context: NSManagedObjectContext) -> Error? {
+    public func saveContext(context: NSManagedObjectContext) throws {
         if !context.hasChanges {
-            return nil
+            return
         }
-        do {
-            try context.save()
-            return nil
-        } catch {
-            return error
-        }
+        try context.save()
     }
     
 }

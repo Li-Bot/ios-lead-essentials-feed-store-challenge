@@ -51,17 +51,11 @@ final class FailableCoreDataStack: CoreDataStack {
         try persistentStoreCoordinator.execute(deleteRequest, with: context)
     }
     
-    @discardableResult
-    func saveContext(context: NSManagedObjectContext) -> Error? {
+    func saveContext(context: NSManagedObjectContext) throws {
         if !context.hasChanges {
-            return nil
+            return
         }
-        do {
-            try context.save()
-            return nil
-        } catch {
-            return error
-        }
+        try context.save()
     }
     
 }
