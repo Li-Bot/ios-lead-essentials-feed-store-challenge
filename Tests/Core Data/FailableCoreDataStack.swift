@@ -34,11 +34,6 @@ final class FailableCoreDataStack: CoreDataStack {
     private let storeURL: URL
     private let allowFetch: Bool
     
-    init(storeURL: URL) {
-        self.storeURL = storeURL
-        allowFetch = false
-    }
-    
     init(storeURL: URL, allowFetch: Bool) {
         self.storeURL = storeURL
         self.allowFetch = allowFetch
