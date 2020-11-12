@@ -14,6 +14,12 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
         
         setupEmptyStoreState()
     }
+    
+    override func tearDown() {
+        super.tearDown()
+        
+        setupEmptyStoreState()
+    }
 
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
