@@ -28,7 +28,10 @@ public final class CoreDataFeedStore: FeedStore {
         managedContext.perform { [weak self] in
             guard let self = self else { return }
             
-            self.deleteCaches()
+            if let error = self.deleteCaches() {
+                completion(error)
+                return
+            }
             let cache = self.createCache(timestamp: timestamp)
             
             let mapper = LocalToModelFeedMapper(feed: feed, cache: cache, context: self.managedContext)
