@@ -5,46 +5,44 @@ import CoreData
 
 public final class ProductionCoreDataStack: CoreDataStack {
     
+    enum CoreDataStackError: Error {
+        case wrongModelURL
+    }
+    
     public lazy var managedContext: NSManagedObjectContext = {
-        var managedObjectContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-        managedObjectContext.persistentStoreCoordinator = persistentStoreCoordinator
-        return managedObjectContext
+        container.newBackgroundContext()
     }()
     
-    private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator = {
-        var coordinator = NSPersistentStoreCoordinator(managedObjectModel: managedObjectModel)
-        let storeOptions = [NSMigratePersistentStoresAutomaticallyOption : true,
-                            NSInferMappingModelAutomaticallyOption : true
-        ]
-
-        do {
-            try coordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: storeURL, options: storeOptions)
-        } catch {
-            print("Unresolved error \(error)")
-            abort()
+    private let container: NSPersistentContainer
+    
+    public init(modelURL: URL, storeURL: URL) throws {
+        guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
+            throw CoreDataStackError.wrongModelURL
         }
-        return coordinator
-    }()
-    
-    private lazy var managedObjectModel: NSManagedObjectModel = {
-        NSManagedObjectModel.mergedModel(from: [Bundle(for: ProductionCoreDataStack.self)])!
-    }()
-    
-    private let storeURL: URL
-    
-    public init(storeURL: URL) {
-        self.storeURL = storeURL
+        
+        let modelName = modelURL.deletingPathExtension().lastPathComponent
+        container = NSPersistentContainer(name: modelName, managedObjectModel: model)
+        let storeDescription = NSPersistentStoreDescription(url: storeURL)
+        container.persistentStoreDescriptions = [storeDescription]
+        
+        var receivedError: Error?
+        container.loadPersistentStores { (stores, error) in
+            receivedError = error
+        }
+        if let error = receivedError {
+            throw error
+        }
     }
     
     public func deleteAll(of entityName: String, context: NSManagedObjectContext) throws {
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
 
-        try persistentStoreCoordinator.execute(deleteRequest, with: context)
+        try container.persistentStoreCoordinator.execute(deleteRequest, with: context)
     }
     
     public func saveContext(context: NSManagedObjectContext) throws {
-        if !context.hasChanges {
+        if !managedContext.hasChanges {
             return
         }
         try context.save()
